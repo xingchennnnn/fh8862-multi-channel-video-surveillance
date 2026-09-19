@@ -43,34 +43,27 @@
 
 ## 系统架构
 
-```mermaid
-flowchart LR
-    subgraph Edge["FH8862 边缘设备 x 4"]
-        Sensor["IMX415 / MIPI"] --> ISP["ISP\nAE / AWB / 镜像翻转"]
-        ISP --> VPSS["VPSS\n缩放 / OSD / Mask"]
-        VPSS --> MainEnc["H.264 主码流\n1280 x 720"]
-        VPSS --> SubEnc["H.264 子码流\n704 x 576"]
-        MainEnc --> MainQ["FrameQueue"]
-        SubEnc --> SubQ["FrameQueue"]
-        MainQ --> RTSP["live555 RTSP\n:8554/main · /sub"]
-        SubQ --> RTSP
-        CTRL["TCP 控制服务\n:9999"]
-    end
+```text
+视频链路（4 块板，每块板提供 /main 和 /sub 两条码流）
+FH8862 board                  Ubuntu relay                  Browser
+     |                             |                           |
+     | IMX415 -> ISP -> VPSS       |                           |
+     |             -> H.264 VENC   |                           |
+     |             -> FrameQueue   |                           |
+     |             -> live555      |                           |
+     |--- RTSP/TCP :8554 --------->| MediaMTX                  |
+     |    /main 1280x720          |                           |
+     |    /sub   704x576          |--- WebRTC / WHEP -------->| 2x2 视频墙
+     |                             |                           |
 
-    subgraph Relay["Ubuntu 中继服务器"]
-        MTX["MediaMTX\nRTSP -> WebRTC / WHEP"]
-        Node["Node.js\n静态服务 + HTTP/TCP 代理"]
-    end
-
-    subgraph Client["浏览器"]
-        Wall["2 x 2 视频墙"]
-        Panel["设备控制面板"]
-    end
-
-    RTSP -->|"RTSP/TCP"| MTX
-    MTX -->|"WebRTC/WHEP"| Wall
-    Panel -->|"HTTP API"| Node
-    Node -->|"TCP 文本命令"| CTRL
+控制链路（以旋转 Camera 2 为例）
+Browser                       Node.js                     FH8862 board
+   | POST /api/rotate             |                            |
+   | {camera_id: 2, rotate: true} |                            |
+   |---------------------------->|                            |
+   |                              |-- TCP "ROTATE 1\n" ------->|
+   |                              |<------------- "OK" --------|
+   |<---------- {ok: true} -------|                            |
 ```
 
 ### 两条独立链路
