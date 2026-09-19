@@ -1,0 +1,66 @@
+# Mediamtx — 4路 RTSP → WebRTC 代理
+# 板端: 192.168.1.11 ~ .14 (RTSP:8554)
+# Ubuntu: 192.168.1.1
+
+logLevel: info
+logDestinations: [stdout]
+
+api: yes
+apiAddress: :9997
+
+webrtcAdditionalHosts:
+  - 192.168.1.1
+webrtcAllowOrigin: '*'
+
+rtsp: yes
+rtspAddress: :8554
+rtspTransports: [tcp]
+rtspEncryption: "no"
+
+rtmp: no
+hls: no
+
+paths:
+  # ─── Board 1 (192.168.1.11) ───
+  cam1_main:
+    source: rtsp://192.168.1.11:8554/main
+    sourceOnDemand: yes
+    rtspTransport: tcp
+
+  cam1_sub:
+    source: rtsp://192.168.1.11:8554/sub
+    sourceOnDemand: yes
+    rtspTransport: tcp
+
+  # ─── Board 2 (192.168.1.12) ───
+  cam2_main:
+    source: rtsp://192.168.1.12:8554/main
+    sourceOnDemand: yes
+    rtspTransport: tcp
+
+  cam2_sub:
+    source: rtsp://192.168.1.12:8554/sub
+    sourceOnDemand: yes
+    rtspTransport: tcp
+
+  # ─── Board 3 (192.168.1.13) ───
+  cam3_main:
+    source: rtsp://192.168.1.13:8554/main
+    sourceOnDemand: yes
+    rtspTransport: tcp
+
+  cam3_sub:
+    source: rtsp://192.168.1.13:8554/sub
+    sourceOnDemand: yes
+    rtspTransport: tcp
+
+  # ─── Board 4 (192.168.1.14) ───
+  cam4_main:
+    source: rtsp://192.168.1.14:8554/main
+    sourceOnDemand: yes
+    rtspTransport: tcp
+
+  cam4_sub:
+    source: rtsp://192.168.1.14:8554/sub
+    sourceOnDemand: yes
+    rtspTransport: tcp

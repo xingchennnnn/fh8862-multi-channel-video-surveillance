@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多路视频监控 - 影流队</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+    <body data-theme="light">
+    <div class="container">
+        <header>
+            <div class="top-header">
+                <div class="brand-block">
+                    <div class="brand-logos" aria-label="项目标识">
+                        <img src="/image/校徽.png" alt="校徽">
+                        <img src="/image/海康图标.png" alt="海康图标">
+                    </div>
+                    <h1>多路 RTSP 视频监控 — 影流队</h1>
+                </div>
+                <div class="theme-switch" aria-label="界面主题">
+                    <button type="button" id="themeLight" onclick="setThemeMode('light')">浅色</button>
+                    <button type="button" id="themeDark" onclick="setThemeMode('dark')">深色</button>
+                </div>
+            </div>
+            <div class="config-bar">
+                <label>本机IP: <input type="text" id="localIp" placeholder="自动检测" readonly></label>
+                <button id="btnConnectAll" onclick="connectAll()">全部连接</button>
+                <button id="btnDisconnectAll" onclick="disconnectAll()">全部断开</button>
+                <button id="btnTimeSync" onclick="ctrlTimeSync()" title="同步时间到全部4块板">时间同步</button>
+                <span class="status-indicator" id="globalStatus">未连接</span>
+            </div>
+        </header>
+
+        <!-- 2×2 Video Wall -->
+        <div class="video-wall" id="videoWall"></div>
+
+        <!-- Camera Selector Tabs -->
+        <div class="camera-selector">
+            <h2>控制面板</h2>
+            <div class="cam-tabs" id="camTabs"></div>
+        </div>
+
+        <!-- Control Panel (targets selected camera) -->
+        <div class="control-panel" id="controlPanel">
+            <h3 id="ctrlTitle">Camera 1 控制</h3>
+
+            <!-- 旋转180度 -->
+            <div class="ctrl-group">
+                <h3>旋转控制</h3>
+                <label class="switch-label">
+                    <input type="checkbox" id="rotateToggle" onchange="ctrlRotate()">
+                    <span>旋转180度</span>
+                </label>
+            </div>
+
+            <!-- OSD 文字颜色 -->
+            <div class="ctrl-group">
+                <h3>OSD 文字颜色</h3>
+                <div class="color-inputs">
+                    <label>R: <input type="range" id="osdColorR" min="0" max="255" value="255" oninput="ctrlOsdColor()"></label>
+                    <label>G: <input type="range" id="osdColorG" min="0" max="255" value="255" oninput="ctrlOsdColor()"></label>
+                    <label>B: <input type="range" id="osdColorB" min="0" max="255" value="255" oninput="ctrlOsdColor()"></label>
+                    <span class="color-preview" id="osdColorPreview"></span>
+                </div>
+            </div>
+
+            <!-- OSD 文字内容 -->
+            <div class="ctrl-group">
+                <h3>OSD 文字内容</h3>
+                <div class="text-inputs">
+                    <input type="text" id="osdTextInput" value="影流队" placeholder="输入OSD文字">
+                    <button onclick="ctrlOsdText()">设置文字</button>
+                    <label class="switch-label">
+                        <input type="checkbox" id="osdTextEnable" checked onchange="ctrlOsdTextEnable()">
+                        <span>显示</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- OSD 反色 -->
+            <div class="ctrl-group">
+                <h3>OSD 反色模式</h3>
+                <select id="osdInvert" onchange="ctrlOsdInvert()">
+                    <option value="0">关闭反色 (勾边模式)</option>
+                    <option value="1">按行反色</option>
+                </select>
+            </div>
+
+            <!-- Mask 管理 -->
+            <div class="ctrl-group">
+                <h3>遮罩(Mask) 全局设置</h3>
+                <div class="mask-global-warning">
+                    颜色和类型是所有遮罩区域共享的 (硬件限制)
+                </div>
+                <div class="mask-type-row">
+                    <label class="switch-label">
+                        <input type="checkbox" id="maskMosaicMode" onchange="ctrlMaskType()">
+                        <span>马赛克模式 (关闭=纯色填充)</span>
+                    </label>
+                    <select id="maskMosaicSize" onchange="ctrlMaskMosaicSize()" style="margin-left:12px;display:none">
+                        <option value="0">16x16 块</option>
+                        <option value="1" selected>32x32 块</option>
+                        <option value="2">64x64 块</option>
+                    </select>
+                </div>
+                <div class="color-inputs" style="margin-top:8px">
+                    <label>R: <input type="range" id="maskColorR" min="0" max="255" value="0" oninput="ctrlMaskColor()"></label>
+                    <label>G: <input type="range" id="maskColorG" min="0" max="255" value="255" oninput="ctrlMaskColor()"></label>
+                    <label>B: <input type="range" id="maskColorB" min="0" max="255" value="0" oninput="ctrlMaskColor()"></label>
+                    <span class="color-preview" id="maskColorPreview"></span>
+                </div>
+                <label class="switch-label" style="margin-top:8px">
+                    <input type="checkbox" id="maskEnable" checked onchange="ctrlMaskEnable()">
+                    <span>总开关</span>
+                </label>
+                <h4 style="margin-top:14px; margin-bottom:6px">遮罩区域列表 (最多8个)</h4>
+                <div id="maskRegionList" class="mask-region-list"></div>
+                <button id="btnAddMaskRegion" onclick="ctrlMaskAddRegion()" style="margin-top:8px">+ 添加区域</button>
+            </div>
+
+            <!-- 设备端录像 -->
+            <div class="ctrl-group">
+                <h3>设备端录像</h3>
+                <div class="record-inputs">
+                    <label>时长(秒): <input type="number" id="recordDuration" value="60" min="1" max="3600"></label>
+                    <button id="btnRecordStart" onclick="ctrlRecordStart()">开始录像</button>
+                    <button id="btnRecordStop" onclick="ctrlRecordStop()" disabled>停止录像</button>
+                    <span id="recordStatus" class="record-status">未录像</span>
+                </div>
+            </div>
+
+            <!-- PC端录像 -->
+            <div class="ctrl-group">
+                <h3>PC端录像</h3>
+                <div class="record-inputs">
+                    <label>时长(秒): <input type="number" id="pcRecordDuration" value="60" min="1" max="3600"></label>
+                    <button id="btnPcRecordStart" onclick="ctrlPcRecordStart()">开始PC录像</button>
+                    <button id="btnPcRecordStop" onclick="ctrlPcRecordStop()" disabled>停止PC录像</button>
+                    <span id="pcRecordStatus" class="record-status">未录像</span>
+                </div>
+            </div>
+
+            <!-- LED 控制 -->
+            <div class="ctrl-group">
+                <h3>LED 指示灯</h3>
+                <div class="led-buttons">
+                    <button class="led-btn off" onclick="ctrlLed(0)">灭</button>
+                    <button class="led-btn on" onclick="ctrlLed(1)">亮</button>
+                    <button class="led-btn blink" onclick="ctrlLed(2)">闪烁</button>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <span>协议: Live555 RTSP → Mediamtx → WebRTC (WHEP)</span>
+            <span class="separator">|</span>
+            <span>控制: HTTP API → TCP → 板端</span>
+            <span class="separator">|</span>
+            <span id="connectionInfo">WebRTC: 未连接</span>
+        </footer>
+    </div>
+
+    <script src="js/webrtc-player.js"></script>
+</body>
+</html>
