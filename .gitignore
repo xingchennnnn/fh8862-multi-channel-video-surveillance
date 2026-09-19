@@ -1,0 +1,42 @@
+# Personal documents
+*个人简历*.pdf
+
+# Local source screenshot containing unredacted names/locations
+/image/多机位运行2.jpg
+
+# FH8862 vendor SDK, firmware and prebuilt artifacts
+/include/
+/lib/
+/driver/
+
+# Downloaded MediaMTX binary and generated runtime config
+/web/mediamtx/mediamtx
+/web/mediamtx/mediamtx.yml
+/web/mediamtx/mediamtx.tar.gz
+
+# Build outputs
+/demo
+*.o
+*.d
+*.so
+*.a
+*.ko
+*.bin
+
+# Node.js
+node_modules/
+npm-debug.log*
+
+# Runtime files
+*.log
+*.pid
+*.webm
+*.mp4
+core
+core.*
+
+# Editors and operating systems
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
