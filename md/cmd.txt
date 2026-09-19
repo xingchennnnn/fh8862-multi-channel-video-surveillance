@@ -1,0 +1,6 @@
+ifconfig eth0 192.168.1.12
+mount -t nfs 192.168.1.1:/mnt/nfs_share /mnt -o nolock
+cd /mnt/driver && sh load_modules_FH8862.sh
+cd led && insmod hello_world.ko
+cp /mnt/imx415_mipi_attr.hex /home/
+cd /mnt && ./demo 
